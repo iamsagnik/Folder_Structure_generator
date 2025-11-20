@@ -7,21 +7,26 @@
   "engines": {
     "vscode": "^1.75.0"
   },
-  "categories": ["Other"],
-
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onCommand:folderStructureGenerator.generateFromSgmtr",
     "onCommand:folderStructureGenerator.previewSgmtr",
     "onLanguage:sgmtr",
     "workspaceContains:*.sgmtr"
   ],
-
   "contributes": {
     "languages": [
       {
         "id": "sgmtr",
-        "aliases": ["SGMTR File", "sgmtr"],
-        "extensions": [".sgmtr"],
+        "aliases": [
+          "SGMTR File",
+          "sgmtr"
+        ],
+        "extensions": [
+          ".sgmtr"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -40,6 +45,10 @@
       {
         "command": "folderStructureGenerator.previewSgmtr",
         "title": "Folder Gen: Preview Structure"
+      },
+      {
+        "command": "folderGen.reverseGenerate",
+        "title": "Folder Gen: Create .sgmtr from Folder"
       }
     ],
     "menus": {
@@ -53,21 +62,29 @@
           "command": "folderStructureGenerator.previewSgmtr",
           "when": "resourceExtname == '.sgmtr'",
           "group": "navigation"
+        },
+        {
+          "command": "folderGen.reverseGenerate",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation"
         }
       ]
     },
     "jsonValidation": [
       {
-        "fileMatch": ["*.sgmtr"],
+        "fileMatch": [
+          "*.sgmtr"
+        ],
         "url": "./schema/sgmtr-schema.json"
       }
     ]
   },
-
   "main": "./extension.js",
   "scripts": {
     "package": "vsce package",
     "publish": "vsce publish"
   },
-  "dependencies": {}
+  "dependencies": {
+    "minimatch": "^10.1.1"
+  }
 }
