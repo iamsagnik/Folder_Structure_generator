@@ -447,6 +447,77 @@ for (let rawKey of Object.keys(node)) {
     }
 }
 
+// LOAD WORKSPACE TEMPLATES
+function loadWorkspaceTemplates(workspaceRoot) {
+    const dir = path.join(workspaceRoot, ".sgmtr", "templates");
+
+    if (!fs.existsSync(dir)) return [];
+
+    return fs.readdirSync(dir)
+        .filter(f => f.endsWith(".sgmtr"))
+        .map(f => ({
+            label: f.replace(".sgmtr", ""),
+            filePath: path.join(dir, f)
+        }));
+}
+
+// GENERATION WITH WORKSPACE TEMPLATE
+async function generateFromWorkspaceTemplate(uri) {
+    const workspace = vscode.workspace.workspaceFolders?.[0];
+    if (!workspace) {
+        return vscode.window.showErrorMessage("Open a workspace first.");
+    }
+
+    const workspaceRoot = workspace.uri.fsPath;
+    const templates = loadWorkspaceTemplates(workspaceRoot);
+
+    if (templates.length === 0) {
+        return vscode.window.showErrorMessage("No templates found in .sgmtr/templates/");
+    }
+
+    const picked = await vscode.window.showQuickPick(
+        templates.map(t => t.label),
+        { placeHolder: "Select a workspace template" }
+    );
+
+    if (!picked) return;
+
+    const template = templates.find(t => t.label === picked);
+
+    const raw = fs.readFileSync(template.filePath, "utf8");
+    const data = JSON.parse(raw);
+
+    // Collect variables
+    const allVars = collectVariablesFromTree(data);
+    const values = {};
+
+    for (const v of allVars) {
+        if (v === "workspaceName") {
+            values[v] = workspace.name;
+            continue;
+        }
+        if (v === "date") {
+            values[v] = new Date().toISOString().split("T")[0];
+            continue;
+        }
+        if (v === "time") {
+            values[v] = new Date().toISOString().split("T")[1].split(".")[0];
+            continue;
+        }
+        if (v.startsWith("ask:")) {
+            const question = v.slice(4);
+            const val = await vscode.window.showInputBox({ prompt: question });
+            values[v] = val || "";
+            continue;
+        }
+        values[v] = "";
+    }
+
+    await createTreeWithVars(uri || workspace.uri, data, values);
+
+    vscode.window.showInformationMessage(`Template "${picked}" generated successfully.`);
+}
+
 // ACTIVATE
 function activate(context) {
     context.subscriptions.push(
@@ -467,6 +538,13 @@ function activate(context) {
         vscode.commands.registerCommand(
             'folderGen.reverseGenerate',
             (uri) => reverseGenerate(uri)
+        )
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            "folderStructureGenerator.generateFromWorkspaceTemplate",
+            (uri) => generateFromWorkspaceTemplate(uri)
         )
     );
 }

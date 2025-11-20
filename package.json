@@ -17,7 +17,8 @@
     "onCommand:folderStructureGenerator.generateFromSgmtr",
     "onCommand:folderStructureGenerator.previewSgmtr",
     "onLanguage:sgmtr",
-    "workspaceContains:*.sgmtr"
+    "workspaceContains:*.sgmtr",
+    "onCommand:folderStructureGenerator.generateFromWorkspaceTemplate"
   ],
   "contributes": {
     "languages": [
@@ -52,6 +53,10 @@
       {
         "command": "folderGen.reverseGenerate",
         "title": "Create .sgmtr from Folder"
+      },
+      {
+        "command": "folderStructureGenerator.generateFromWorkspaceTemplate",
+        "title": "Generate From Workspace Template"
       }
     ],
     "menus": {
@@ -70,6 +75,11 @@
           "command": "folderGen.reverseGenerate",
           "when": "explorerResourceIsFolder",
           "group": "navigation"
+        },
+        {
+          "command": "folderStructureGenerator.generateFromWorkspaceTemplate",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation" 
         }
       ]
     },
