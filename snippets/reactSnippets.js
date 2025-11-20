@@ -95,7 +95,7 @@ function isReactSnippetKeyword(value) {
     return /^(rafce|rfc|rafc|rsc|rcc)(:[A-Za-z0-9_]+)?$/.test(value);
 }
 
-module.exports = {
+export {
     expandReactSnippet,
     isReactSnippetKeyword
 };

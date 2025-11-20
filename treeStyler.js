@@ -1,14 +1,5 @@
-/* --------------------------------------------
-   ASCII Tree Formatter (Option 2)
-   Produces a classic box-drawing tree:
-   ├── file
-   └── folder/
-   │   └── child
---------------------------------------------- */
-
-const { isReactSnippetKeyword } = require("./snippets/reactSnippets");
-const path = require("path");
-
+import { isReactSnippetKeyword } from "./snippets/reactSnippets.js";
+import path from "path";
 
 /**
  * Build an ASCII box-drawing tree from a JSON object.
@@ -58,6 +49,6 @@ function buildAsciiTree(node, prefix = "") {
 }
 
 
-module.exports = {
+export {
     buildAsciiTree
 };

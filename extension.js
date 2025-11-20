@@ -1,9 +1,10 @@
-const vscode = require("vscode");
-const path = require("path");
-const { buildAsciiTree } = require("./treeStyler");
-const fs = require('fs');
-const { Minimatch } = require('minimatch');
-const { expandReactSnippet, isReactSnippetKeyword } = require("./snippets/reactSnippets");
+import {buildAsciiTree} from "./treeStyler.js";
+import path from "path";
+import fs from "fs";
+import { Minimatch } from "minimatch";
+import { expandReactSnippet, isReactSnippetKeyword } from "./snippets/reactSnippets.js";
+import * as vscode from "vscode";
+
 
 async function fileExists(uri) {
     try {
@@ -390,4 +391,7 @@ function activate(context) {
 
 function deactivate() {}
 
-module.exports = { activate, deactivate };
+export {
+    activate,
+    deactivate
+};

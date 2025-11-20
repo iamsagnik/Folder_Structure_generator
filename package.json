@@ -3,6 +3,9 @@
   "displayName": "Folder Structure Generator",
   "description": "Generate folders & files from a .sgmtr structure file.",
   "version": "1.0.0",
+
+  "type": "module",
+
   "publisher": "LeoConan",
   "engines": {
     "vscode": "^1.75.0"
