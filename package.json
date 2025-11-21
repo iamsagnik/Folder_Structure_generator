@@ -1,7 +1,7 @@
 {
-  "name": "folder-structure-generator",
-  "displayName": "Folder Structure Generator",
-  "description": "Generate folders & files from a .sgmtr structure file.",
+  "name": "project-scaffolder",
+  "displayName": "Project Scaffolder",
+  "description": "Generate folders & files from a .sgmtr structure file and vice versa.",
   "version": "1.0.0",
   "icon": "assets/folder.png",
   "galleryBanner.Color": {
@@ -9,7 +9,7 @@
     "theme" : "dark"
   },
   "type": "module",
-  "publisher": "Waynis",
+  "publisher": "sagnikMitra12",
 
   "engines": {
     "vscode": "^1.75.0"
