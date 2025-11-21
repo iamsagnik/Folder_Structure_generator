@@ -119,6 +119,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/iamsagnik/Folder_Structure_generator.git"
+    "url": "https://github.com/iamsagnik/project-scaffolder.git"
+  },
+  "homepage": "https://github.com/iamsagnik/project-scaffolder",
+  "bugs": {
+    "url": "https://github.com/iamsagnik/project-scaffolder/issues"
   }
 }
