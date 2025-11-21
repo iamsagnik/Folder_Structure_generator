@@ -30,10 +30,10 @@ function detectSnippet(raw) {
 }
 
 // Detect React component in real files during preview
-function looksLikeReactComponent(absPath) {
-    let raw;
+async function looksLikeReactComponent(absPath) {
     try {
-        raw = fs.readFileSync(absPath, "utf8");
+        const rawBytes = await vscode.workspace.fs.readFile(vscode.Uri.file(absPath));
+        let raw = Buffer.from(rawBytes).toString("utf8");
         return (
             /export default function/i.test(raw) ||
             /export default\s+.*=>\s*\(/i.test(raw) ||
@@ -45,9 +45,10 @@ function looksLikeReactComponent(absPath) {
 }
 
 // For reverse generation – produce clean DSL value
-function processFileContent(abs) {
+async function processFileContent(abs) {
     try {
-        const raw = fs.readFileSync(abs, 'utf8');
+        const rawBytes = await vscode.workspace.fs.readFile(vscode.Uri.file(abs));
+        const raw = Buffer.from(rawBytes).toString("utf8");
         const snippet = detectSnippet(raw);
         return snippet || "";
     } catch {
@@ -91,9 +92,10 @@ async function createTree(baseUri, node, values) {
 }
 
 // Extract imports and exports from real file
-function extractImportsExports(abs) {
+async function extractImportsExports(abs) {
     try {
-        const raw = fs.readFileSync(abs, "utf8");
+        const rawBytes = await vscode.workspace.fs.readFile(vscode.Uri.file(abs));
+        const raw = Buffer.from(rawBytes).toString("utf8");
         const lines = raw.split("\n");
         const imports = lines.filter(l => l.trim().startsWith("import"));
         const exports = lines.filter(l => l.trim().startsWith("export"));
@@ -108,7 +110,7 @@ function extractImportsExports(abs) {
 async function previewSgmtr(uri) {
     try {
         const raw = await vscode.workspace.fs.readFile(uri);
-        const text = raw.toString();
+        const text = Buffer.from(raw).toString("utf8");
         const data = JSON.parse(text);
 
         const choice = await vscode.window.showQuickPick(
@@ -123,17 +125,29 @@ async function previewSgmtr(uri) {
         const values = {};
 
         for (const v of allVars) {
-            if (v === "workspaceName") { values[v] = path.basename(workspaceRoot); continue; }
-            if (v === "date") { values[v] = new Date().toISOString().split("T")[0]; continue; }
-            if (v === "time") { values[v] = new Date().toISOString().split("T")[1].split(".")[0]; continue; }
-            if (v.startsWith("ask:")) { values[v] = `<${v.slice(4)}>`; continue; }
+            if (v === "workspaceName"){ 
+                values[v] = path.basename(workspaceRoot); 
+                continue; 
+            }
+            if (v === "date"){ 
+                values[v] = new Date().toISOString().split("T")[0]; 
+                continue; 
+            }
+            if (v === "time"){ 
+                values[v] = new Date().toISOString().split("T")[1].split(".")[0]; 
+                continue; 
+            }
+            if (v.startsWith("ask:")) { 
+                values[v] = `<${v.slice(4)}>`; 
+                continue; 
+            }
             values[v] = "";
         }
 
         const patterns = loadSgmtrIgnore(workspaceRoot);
         const matchers = buildIgnoreMatchers(patterns);
 
-        function enhanceTree(node, absBase) {
+        async function enhanceTree(node, absBase) {
             if (!node || typeof node !== "object") return {};
 
             const enhanced = {};
@@ -156,23 +170,21 @@ async function previewSgmtr(uri) {
                     if (showDetails && (isSnippet || couldBeComponent)) {
 
                         const isRealComponent =
-                            couldBeComponent ? looksLikeReactComponent(absPath) : false;
+                            couldBeComponent ? await looksLikeReactComponent(absPath) : false;
 
                         const label = isSnippet
                             ? `${key} [expands: ${resolvedContent}]`
                             : (isRealComponent
                                 ? `${key} [component detected]`
                                 : key);
-                        const meta = extractImportsExports(absPath) || {};
-                        const importsArr = Array.isArray(meta.imports) ? meta.imports : [];
-                        const exportsArr = Array.isArray(meta.exports) ? meta.exports : [];
+                        const meta = await extractImportsExports(absPath);
 
-                        const importObj = importsArr.length
-                            ? Object.fromEntries(importsArr.map(line => [`- ${line}`, "{imports}"]))
+                        const importObj = meta.imports.length
+                            ? Object.fromEntries(meta.imports.map(line => [`- ${line}`, "{imports}"]))
                             : { "(none)": "(none)" };
 
-                        const exportObj = exportsArr.length
-                            ? Object.fromEntries(exportsArr.map(line => [`- ${line}`, "{export}"]))
+                        const exportObj = meta.exports.length
+                            ? Object.fromEntries(meta.exports.map(line => [`- ${line}`, "{export}"]))
                             : { "(none)": "(none)" };
 
                         enhanced[label] = {
@@ -188,7 +200,7 @@ async function previewSgmtr(uri) {
                 }
 
                 if (typeof value === "object" && value !== null) {
-                    enhanced[key] = enhanceTree(value, absPath);
+                    enhanced[key] = await enhanceTree(value, absPath);
                     continue;
                 }
                 enhanced[key] = "(file)";
@@ -198,7 +210,7 @@ async function previewSgmtr(uri) {
         }
 
         // Build tree for preview
-        const enhanced = enhanceTree(data, workspaceRoot);
+        const enhanced = await enhanceTree(data, workspaceRoot);
         const tree = buildAsciiTree(enhanced);
 
         const panel = vscode.window.createWebviewPanel(
@@ -287,16 +299,22 @@ async function generateFromSgmtr(uri) {
 }
 
 // IGNORE FILE SUPPORT
-function loadSgmtrIgnore(rootPath) {
-    const ignoreFile = path.join(rootPath, '.sgmtrignore');
-    if (!fs.existsSync(ignoreFile)) return [];
+async function loadSgmtrIgnore(rootPath) {
 
-    const raw = fs.readFileSync(ignoreFile, 'utf8');
-    const lines = raw.split(/\r?\n/);
+    const ignoreUri = vscode.Uri.file(path.join(rootPath, '.sgmtrignore'));
 
-    return lines
-        .map(line => line.trim())
-        .filter(line => line && !line.startsWith('#'));
+    try {
+        const rawBytes = await vscode.workspace.fs.readFile(ignoreUri);
+        const raw = Buffer.from(rawBytes).toString("utf8");
+
+        return raw
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(line => line && !line.startsWith('#'));
+
+    } catch {
+        return [];
+    }
 }
 
 // IGNORE FILE SUPPORT
@@ -338,18 +356,26 @@ function isIgnored(relativePath, matchers) {
 // REVERSE GENERATION
 async function readFolder(folderPath, basePath, matchers) {
     const tree = {};
-    const entries = fs.readdirSync(folderPath, { withFileTypes: true });
 
-    for (const entry of entries) {
-        const abs = path.join(folderPath, entry.name);
+    const folderUri = vscode.Uri.file(folderPath);
+    let entries;
+    try {
+        entries = await vscode.workspace.fs.readDirectory(folderUri);
+        // entries: [ [name, vscode.FileType.File], [name, vscode.FileType.Directory] ]
+    } catch {
+        return tree;
+    }
+
+    for (const [name, type] of entries) {
+        const abs = path.join(folderPath, name);
         const rel = path.relative(basePath, abs);
 
         if (isIgnored(rel, matchers)) continue;
 
-        if (entry.isDirectory()) {
-            tree[entry.name] = await readFolder(abs, basePath, matchers);
-        } else if (entry.isFile()) {
-            tree[entry.name] = processFileContent(abs);
+        if (type === vscode.FileType.Directory) {
+            tree[name] = await readFolder(abs, basePath, matchers);
+        } else if (type === vscode.FileType.File) {
+            tree[name] = await processFileContent(abs);
         }
     }
 
@@ -358,6 +384,8 @@ async function readFolder(folderPath, basePath, matchers) {
 
 // REVERSE GENERATION
 async function reverseGenerate(uri) {
+
+    vscode.window.showInformationMessage("reverseGenerate triggered");
     if (!uri) {
         vscode.window.showErrorMessage("No folder selected.");
         return;
@@ -367,16 +395,16 @@ async function reverseGenerate(uri) {
         const folderPath = uri.fsPath;
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || folderPath;
 
-        const patterns = loadSgmtrIgnore(workspaceRoot);
+        const patterns = await loadSgmtrIgnore(workspaceRoot);
         const matchers = buildIgnoreMatchers(patterns);
 
         const tree = await readFolder(folderPath, folderPath, matchers);
 
         const json = JSON.stringify(tree, null, 2);
         const fileName = path.basename(folderPath) + ".sgmtr";
-        const outPath = path.join(folderPath, fileName);
+        const outPath = vscode.Uri.file(path.join(folderPath, fileName));
 
-        fs.writeFileSync(outPath, json, 'utf8');
+        await vscode.workspace.fs.writeFile(outPath, Buffer.from(json, "utf8"));
 
         vscode.window.showInformationMessage(`Generated: ${fileName}`);
     } catch (err) {
@@ -396,7 +424,6 @@ function collectVariablesFromTree(node, set = new Set()) {
     }
     return Array.from(set);
 }
-
 
 function extractVariablesFromString(str, set) {
     const regex = /\$\{([^}]+)\}/g;
@@ -448,17 +475,28 @@ for (let rawKey of Object.keys(node)) {
 }
 
 // LOAD WORKSPACE TEMPLATES
-function loadWorkspaceTemplates(workspaceRoot) {
-    const dir = path.join(workspaceRoot, ".sgmtr", "templates");
+async function loadWorkspaceTemplates(workspaceRoot) {
+    const dirPath = path.join(workspaceRoot, ".sgmtr", "templates");
+    const dirUri = vscode.Uri.file(dirPath);
 
-    if (!fs.existsSync(dir)) return [];
+    let entries;
 
-    return fs.readdirSync(dir)
-        .filter(f => f.endsWith(".sgmtr"))
-        .map(f => ({
-            label: f.replace(".sgmtr", ""),
-            filePath: path.join(dir, f)
+    // Check directory exists
+    try {
+        entries = await vscode.workspace.fs.readDirectory(dirUri);
+    } catch {
+        return [];
+    }
+
+    // entries = [ ["fileName", FileType] ]
+    const templates = entries
+        .filter(([name, type]) => type === vscode.FileType.File && name.endsWith(".sgmtr"))
+        .map(([name]) => ({
+            label: name.replace(".sgmtr", ""),
+            filePath: path.join(dirPath, name)
         }));
+
+    return templates;
 }
 
 // GENERATION WITH WORKSPACE TEMPLATE
@@ -469,7 +507,7 @@ async function generateFromWorkspaceTemplate(uri) {
     }
 
     const workspaceRoot = workspace.uri.fsPath;
-    const templates = loadWorkspaceTemplates(workspaceRoot);
+    const templates = await loadWorkspaceTemplates(workspaceRoot);
 
     if (templates.length === 0) {
         return vscode.window.showErrorMessage("No templates found in .sgmtr/templates/");
@@ -484,7 +522,8 @@ async function generateFromWorkspaceTemplate(uri) {
 
     const template = templates.find(t => t.label === picked);
 
-    const raw = fs.readFileSync(template.filePath, "utf8");
+    const rawBytes = await vscode.workspace.fs.readFile(vscode.Uri.file(template.filePath));
+    const raw = Buffer.from(rawBytes).toString("utf8");
     const data = JSON.parse(raw);
 
     // Collect variables

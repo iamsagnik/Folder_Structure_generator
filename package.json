@@ -32,9 +32,10 @@
   "activationEvents": [
     "onCommand:folderStructureGenerator.generateFromSgmtr",
     "onCommand:folderStructureGenerator.previewSgmtr",
+    "onCommand:folderGen.reverseGenerate",
+    "onCommand:folderStructureGenerator.generateFromWorkspaceTemplate",
     "onLanguage:sgmtr",
-    "workspaceContains:*.sgmtr",
-    "onCommand:folderStructureGenerator.generateFromWorkspaceTemplate"
+    "workspaceContains:**/*.sgmtr"
   ],
   "contributes": {
     "languages": [
