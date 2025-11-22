@@ -35,7 +35,7 @@ function collectVariablesFromTree(node, set = new Set()) {
 }
 
 
-export {
+module.exports = {
     extractVariables,
     isAskVariable,
     injectVariables,

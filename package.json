@@ -2,13 +2,12 @@
   "name": "project-scaffolder",
   "displayName": "Project Scaffolder",
   "description": "Generate folders & files from a .sgmtr structure file and vice versa.",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "icon": "assets/folder.png",
   "galleryBanner.Color": {
     "color": "#1b1b40",
     "theme": "dark"
   },
-  "type": "module",
   "publisher": "sagnikMitra12",
   "keywords": [
     "template",

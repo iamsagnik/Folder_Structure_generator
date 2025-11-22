@@ -1,10 +1,6 @@
-// reactSnippets.js
-
-/* --------------------------------------------
-   React Shorthand Snippet Expansions
-   Supported keywords:
-   rafce, rfc, rafc, rsc, rcc
---------------------------------------------- */
+  // React Shorthand Snippet Expansions
+  // Supported keywords:
+  // rafce, rfc, rafc, rsc, rcc
 
 function inferComponentName(filename) {
     const noExt = filename.replace(/\.[^.]+$/, ""); // remove extension
@@ -95,7 +91,7 @@ function isReactSnippetKeyword(value) {
     return /^(rafce|rfc|rafc|rsc|rcc)(:[A-Za-z0-9_]+)?$/.test(value);
 }
 
-export {
+module.exports = {
     expandReactSnippet,
     isReactSnippetKeyword
 };

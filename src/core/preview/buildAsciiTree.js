@@ -1,5 +1,5 @@
-import { isReactSnippetKeyword } from "./snippets/reactSnippets.js";
-import path from "path";
+const { isReactSnippetKeyword } = require("./snippets/reactSnippets.js");
+const path = require("path");
 
 /**
  * Build an ASCII box-drawing tree from a JSON object.
@@ -11,9 +11,15 @@ import path from "path";
 function buildAsciiTree(node, prefix = "") {
     const entries = Object.keys(node);
 
-    const folders = entries.filter(k => typeof node[k] === "object").sort();
-    const files   = entries.filter(k => typeof node[k] === "string").sort();
-    const all     = [...folders, ...files];
+    const folders = entries.filter(
+        k => typeof node[k] === "object" && !Array.isArray(node[k])
+    ).sort();
+
+    const files = entries.filter(
+        k => typeof node[k] === "string" || Array.isArray(node[k])
+    ).sort();
+
+    const all = [...folders, ...files];
 
     let output = "";
 
@@ -23,6 +29,20 @@ function buildAsciiTree(node, prefix = "") {
 
         const branch = isLast ? "└── " : "├── ";
         const nextPrefix = prefix + (isLast ? "    " : "│   ");
+
+        // ARRAY SUPPORT (imports/exports)
+        if (Array.isArray(value)) {
+            output += `${prefix}${branch}${name}/\n`;
+
+            value.forEach((line, i) => {
+                const isLastLine = i === value.length - 1;
+                const subBranch = isLastLine ? "└── " : "├── ";
+                output += `${nextPrefix}${subBranch}${line}\n`;
+            });
+
+            return;
+        }
+
 
         // FOLDER
         if (typeof value === "object") {
@@ -49,6 +69,6 @@ function buildAsciiTree(node, prefix = "") {
 }
 
 
-export {
+module.exports = {
     buildAsciiTree
 };
